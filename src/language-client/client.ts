@@ -3646,6 +3646,7 @@ export abstract class BaseLanguageClient {
       initializationOptions: Is.func(initializationOptions) ? initializationOptions() : initializationOptions,
       trace: Trace.toString(this._trace),
       workspaceFolders: null,
+      locale: this.getLocale(),
       clientInfo: {
         name: 'coc.nvim',
         version: workspace.version
@@ -4235,6 +4236,27 @@ export abstract class BaseLanguageClient {
     return workspace.applyEdit(params.edit).then(value => {
       return { applied: value }
     })
+  }
+
+  private getLocale(): string {
+    // TODO: use vim :language or coc.preferences config?
+    interface NLS_CONFIG {
+      locale: string
+    }
+    const envValue = process.env['VSCODE_NLS_CONFIG']
+    if (envValue === undefined) {
+      return 'en'
+    }
+
+    let config: NLS_CONFIG | undefined = undefined
+    try {
+      config = JSON.parse(envValue)
+    } catch (err) {
+    }
+    if (config === undefined || typeof config.locale !== 'string') {
+      return 'en'
+    }
+    return config.locale
   }
 
   public logFailedRequest(type: MessageSignature, error: any): void {
