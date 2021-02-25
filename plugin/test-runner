@@ -1,0 +1,96 @@
+#!/bin/bash
+# Test runner for coc.vim
+# Strips away everything but the function definitions 
+# and replaces built-ins with overridable functions
+
+# exit on error
+set -e
+#set -x
+
+assert_file(){
+    if [ ! -e $1 ]; then
+        printf "Missing file: %s\n" $1
+        exit 1
+    fi
+}
+
+# @param testname corresponds to two files: ${testname}.setup.vimtest and ${testname}.vimtest
+make_test(){
+    TMPSCRIPT=$(mktemp)
+    local SETUP=${1}.setup.vimtest
+    local TEST=${1}.vimtest
+
+    assert_file $SETUP
+    assert_file $TEST
+
+    # setup test code, including stubs to be used
+    cp $SETUP $TMPSCRIPT
+
+    # strip all non-functions from the plugin code and append to the test script
+    egrep -v '^(command|.noremap|call)' coc.vim | \
+        sed -e 's/coc#\([a-z]*\)#\([a-z]\)/MOCK_coc_\1_\2/' | \
+        sed -e 's/echom \(.*\)/call MOCK_echom(\1)/' | \
+        replace_builtins >> $TMPSCRIPT
+
+
+    if [ -n "$DEBUG" ]; then
+        echo "let s:debug = 1" >> $TMPSCRIPT
+    fi
+
+    # the tests to run 
+    cat $TEST >> $TMPSCRIPT
+
+    # Signal test end to user
+    cat >> $TMPSCRIPT << EOF
+echom "$1 finished"
+sleep 1
+EOF
+
+    # auto-quit unless ...
+    if [ -z "$STOP_ON_FINISH" ]; then
+        echo "quit" >> $TMPSCRIPT
+    fi
+}
+
+# @param builtin
+# @returns sed compatible regex that replaces $1 with MOCK_$1
+# @example `if !(has("nvim-0.4.0"))` => `if !(MOCK_has("nvim-0.4.0"))
+create_replace_regex(){
+    printf "%s" "s/ \([!(]\{0,2\}\)$1(/ \1MOCK_$1(/g"
+}
+
+# replaces built-in _functions_
+replace_builtins(){
+    sed \
+        -e "$(create_replace_regex has)" \
+        ;
+}
+
+# override which vim version to test this with by setting 
+# the VIM environment variable: `VIM_EXE=nvim ./run-test
+if [ "x$VIM_EXE" = "x" ]; then
+    VIM_EXE=/usr/bin/vim # default
+fi
+
+case $1 in
+    --help)
+        printf "Usage: %s [--show-script | --stop-on-finish] test-name"
+        exit 1
+        ;;
+    --show-script)
+        SHOW_SCRIPT=1
+        shift
+        ;;
+    --stop-on-finish)
+        STOP_ON_FINISH=1
+        shift
+        ;;
+esac
+
+make_test $1
+if [ "$SHOW_SCRIPT" ]; then
+    less $TMPSCRIPT
+    exit
+fi
+$VIM_EXE --clean -S $TMPSCRIPT
+rm $TMPSCRIPT

@@ -1,0 +1,26 @@
+" XUnit for VIM :p
+" vi: ft=vim
+
+function! ShouldMatch(text,regexp)
+    if !(a:text =~# a:regexp)
+        throw "Assertion failed. Expected '" . a:text . "' to match '" . a:regexp . "'"
+    endif
+endfunction
+
+function! ShouldNotMatch(text,regexp)
+    if a:text =~# a:regexp
+        throw "Assertion failed. Expected '" . a:text . "' not to match '" . a:regexp . "'"
+    endif
+endfunction
+
+function! ShouldNotMatchListElem(list,index,regexp)
+    if len(a:list) > 0
+        call ShouldNotMatch(a:list[a:index], a:regexp)
+    endif
+endfunction
+
+function! ShouldBeEmpty(list)
+    if len(a:list) > 0
+        throw "Assertion failed. Expected empty list"
+    endif
+endfunction

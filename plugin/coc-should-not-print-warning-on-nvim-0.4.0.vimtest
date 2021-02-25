@@ -1,0 +1,17 @@
+" test assertions
+" vi: ft=vim
+source ./vimunit.testvim
+
+" Arrange
+
+" Act
+call s:checkVersion() 
+
+" Assert
+call ShouldNotMatchListElem(g:echomArgs, 0, "coc.nvim works best on .* and neovim >= 0.4.0")
+call ShouldBeEmpty(g:echomArgs) 
+
+if s:debug
+    echo "echom arguments: " . join(g:echomArgs, ',')
+    echo "has arguments: " . join(s:hasArgs, ',')
+endif

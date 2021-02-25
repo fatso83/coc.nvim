@@ -1,0 +1,17 @@
+" test assertions
+" vi: ft=vim
+source ./vimunit.testvim
+
+" Arrange
+" done in coc.setup.vimtest
+
+" Act
+call s:checkVersion() 
+
+" Assert
+call ShouldMatch(g:echomArgs[0], "coc.nvim works best on .* and neovim >= 0.4.0")
+
+if s:debug
+    echo "echom arguments: " . join(g:echomArgs, ',')
+    echo "has arguments: " . join(s:hasArgs, ',')
+endif

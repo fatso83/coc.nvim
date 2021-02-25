@@ -1,0 +1,10 @@
+" vi: ft=vim
+
+function! MOCK_coc_rpc_start_server()
+endfunction
+
+let g:echomArgs = []
+function! MOCK_echom(arg)
+    call add(g:echomArgs, a:arg)
+endfunction
+
